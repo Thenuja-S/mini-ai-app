@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 
+
 function InputByType({ field, value, onChange }) {
   const type = field.type || "text";
-
   if (type === "boolean") {
     return (
       <label className="checkbox">
         <input
+          id={field.id}
+          name={field.name}
           type="checkbox"
           checked={!!value}
           onChange={(e) => onChange(e.target.checked)}
@@ -16,15 +18,19 @@ function InputByType({ field, value, onChange }) {
       </label>
     );
   }
-
+  // If dropdown selection
   if (type === "select" && Array.isArray(field.options)) {
     return (
       <select
+        id={field.id}
+        name={field.name}
         className="select"
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="" disabled>{field.placeholder || "Select…"}</option>
+        <option value="" disabled>
+          {field.placeholder || "Select…"}
+        </option>
         {field.options.map((opt, i) => (
           <option key={i} value={opt.value ?? opt}>
             {"label" in opt ? opt.label : String(opt)}
@@ -33,13 +39,12 @@ function InputByType({ field, value, onChange }) {
       </select>
     );
   }
-
-  const map = { number: "number", email: "email", date: "date", password: "password", url:"url" };
-  const htmlType = map[type] || "text";
-
+  // If multiline textarea
   if (type === "multiline" || type === "textarea") {
     return (
       <textarea
+        id={field.id}
+        name={field.name}
         className="textarea"
         placeholder={field.placeholder || ""}
         value={value ?? ""}
@@ -47,9 +52,13 @@ function InputByType({ field, value, onChange }) {
       />
     );
   }
-
+  // If default values
+  const map = { number: "number", email: "email", date: "date", password: "password", url: "url" };
+  const htmlType = map[type] || "text";
   return (
     <input
+      id={field.id}
+      name={field.name}
       className="input"
       type={htmlType}
       placeholder={field.placeholder || ""}
@@ -60,39 +69,52 @@ function InputByType({ field, value, onChange }) {
 }
 
 function EntityForm({ name, fields }) {
-  const [data, setData] = useState({});
-
-  const set = (k, v) => setData((d) => ({ ...d, [k]: v }));
+  const [values, setValues] = useState(() => fields.map(() => undefined));
+  const setValueAt = (idx, value) =>
+    setValues((prev) => {
+      const next = [...prev];
+      next[idx] = value;
+      return next;
+    });
 
   const onSubmit = (e) => {
     e.preventDefault();
-    alert(`${name} submitted:
-` + JSON.stringify(data, null, 2));
+    const payload = fields.reduce((obj, field, idx) => {
+      obj[field.name] = values[idx];
+      return obj;
+    }, {});
+    alert(`${name} submitted:\n` + JSON.stringify(payload, null, 2));
   };
 
   return (
     <form className="card form" onSubmit={onSubmit}>
       <div className="h2" style={{ marginBottom: 2 }}>{name}</div>
       <div className="grid grid--2">
-        {fields.map((field, idx) => (
-          <div className="field" key={idx}>
-            {field.type !== "boolean" && (
-              <label className="label">
-                {field.label || field.name}
-                {field.required ? " *" : ""}
-              </label>
-            )}
-            <InputByType field={field} value={data[field.name]} onChange={(v) => set(field.name, v)} />
-          </div>
-        ))}
+        {fields.map((field, idx) => {
+          const inputId = `${name}-${field.name}`;
+          return (
+            <div className="field" key={field.name}>
+              {field.type !== "boolean" && (
+                <label className="label" htmlFor={inputId}>
+                  {field.label || field.name}
+                  {field.required ? " *" : ""}
+                </label>
+              )}
+              <InputByType
+                field={{ ...field, id: inputId }}
+                value={values[idx]}
+                onChange={(v) => setValueAt(idx, v)}
+              />
+            </div>
+          );
+        })}
       </div>
-
-      <div style={{ display:"flex", gap:10, marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
         <button className="btn" type="submit">Save</button>
         <button
           type="button"
           className="btn btn--ghost"
-          onClick={() => setData({})}
+          onClick={() => setValues(() => fields.map(() => undefined))}
         >
           Reset
         </button>
@@ -102,24 +124,19 @@ function EntityForm({ name, fields }) {
 }
 
 export default function GeneratedUI() {
-  const location = useLocation();
-  const extracted = location.state?.extracted || {
+  const { state } = useLocation();
+  const extracted = state?.extracted || {
     appName: "Sample App",
     entities: ["Entity"],
     features: ["Create", "Update", "List"],
     entitySchemas: {
       Entity: [
-        { name: "title", label: "Title", type: "text", required: true, placeholder: "Enter title" },
-        { name: "description", label: "Description", type: "multiline" },
-        { name: "dueDate", label: "Due Date", type: "date" },
-        { name: "priority", label: "Priority", type: "select", options: ["Low","Medium","High"] },
-        { name: "completed", label: "Completed", type: "boolean" }
-      ]
-    }
+        { name: "title", label: "Title", type: "text", required: true },
+        // …
+      ],
+    },
   };
-
   const { appName, entities = [], features = [], entitySchemas = {} } = extracted;
-
   return (
     <div className="grid" style={{ marginTop: 18 }}>
       <div className="card card--soft">
@@ -130,12 +147,10 @@ export default function GeneratedUI() {
           </div>
         )}
       </div>
-
       <div className="grid">
-        {entities.map((e) => {
-          const fields = entitySchemas[e] || [];
-          return <EntityForm key={e} name={e} fields={fields} />;
-        })}
+        {entities.map((e) => (
+          <EntityForm key={e} name={e} fields={entitySchemas[e] || []} />
+        ))}
       </div>
     </div>
   );
