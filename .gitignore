@@ -1,6 +1,9 @@
 client/node_modules/
 server/node_modules/
 
+server/.vscode
+client/.vscode
+
 client/package-lock.json
 server/package-lock.json
 

@@ -2,11 +2,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { env } from "../config/env.js";
 
-//Initialize the OpenAI client. 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-
-
-//Calls the OpenAI to extract entity and features
 
 export async function extractRequirements({ prompt }) {
   const system = `You are a requirements extraction assistant.
@@ -19,65 +15,83 @@ For each entity, produce 3–8 field objects with keys: label, type, relation.
 
   const user = `Requirement Description:\n${prompt}`;
 
-  //Build field item schema
   const fieldItem = {
     type: "object",
     properties: {
-      label:    { type: "string" },
-      type:     { type: "string", enum: ["text","email","number","date","time","url","password","boolean","select"] },
-      relation: { type: "string" } 
+      label: { type: "string" },
+      type: {
+        type: "string",
+        enum: [
+          "text",
+          "email",
+          "number",
+          "date",
+          "time",
+          "url",
+          "password",
+          "boolean",
+          "select",
+        ],
+      },
+      relation: { type: "string" },
     },
     required: ["label", "type", "relation"],
-    additionalProperties: false
+    additionalProperties: false,
   };
 
-  //Root properties
   const properties = {
-    appName:  { type: "string" },
+    appName: { type: "string" },
     entities: { type: "array", items: { type: "string" } },
-    roles:    { type: "array", items: { type: "string" } },
+    roles: { type: "array", items: { type: "string" } },
     features: { type: "array", items: { type: "string" } },
     entitySchemas: {
       type: "object",
       description: "Map of entity -> array of field objects",
       additionalProperties: {
         type: "array",
-        items: fieldItem
-      }
-    }
+        items: fieldItem,
+      },
+    },
   };
 
-  //Derive required strictly from property keys
   const schemaToSend = {
     type: "object",
     properties,
     required: Object.keys(properties),
-    additionalProperties: false
+    additionalProperties: false,
   };
-
 
   const resp = await client.chat.completions.create({
     model: "gpt-4o-2024-08-06",
     messages: [
       { role: "system", content: system },
-      { role: "user", content: user }
+      { role: "user", content: user },
     ],
     response_format: {
       type: "json_schema",
       json_schema: {
         name: "RequirementExtract",
-        schema: schemaToSend
-       
-      }
-    }
+        schema: schemaToSend,
+      },
+    },
   });
 
   const json = JSON.parse(resp.choices?.[0]?.message?.content || "{}");
 
   const FieldSchema = z.object({
     label: z.string(),
-    type: z.enum(["text","email","number","date","time","url","password","boolean","select"]),
-    relation: z.string()
+    type: z.enum([
+      "text",
+      "email",
+      "number",
+      "date",
+      "time",
+      "url",
+      "password",
+      "boolean",
+      "select",
+    ]),
+    relation: z.string(),
   });
 
   const RequirementSchema = z.object({
@@ -85,12 +99,14 @@ For each entity, produce 3–8 field objects with keys: label, type, relation.
     entities: z.array(z.string()),
     roles: z.array(z.string()),
     features: z.array(z.string()),
-    entitySchemas: z.record(z.array(FieldSchema))
+    entitySchemas: z.record(z.array(FieldSchema)),
   });
 
   const parsed = RequirementSchema.safeParse(json);
   if (!parsed.success) {
-    throw new Error("OpenAI schema mismatch: " + JSON.stringify(parsed.error.issues, null, 2));
+    throw new Error(
+      "OpenAI schema mismatch: " + JSON.stringify(parsed.error.issues, null, 2)
+    );
   }
   return parsed.data;
 }

@@ -12,9 +12,7 @@ app.use(express.json());
 
 app.get("/", (_, res) => res.json({ ok: true, service: "mini-ai-app" }));
 
-
 app.use("/api/ai", aiRoutes);
-
 
 mongoose
   .connect(env.MONGO_URI)
@@ -23,7 +21,7 @@ mongoose
       console.log(`API running on http://localhost:${env.PORT}`);
     });
   })
-  .catch(err => {
+  .catch((err) => {
     console.error("Mongo connection error", err);
     process.exit(1);
   });

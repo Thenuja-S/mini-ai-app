@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 
-
 function InputByType({ field, value, onChange }) {
   const type = field.type || "text";
   if (type === "boolean") {
@@ -18,7 +17,7 @@ function InputByType({ field, value, onChange }) {
       </label>
     );
   }
-  // If dropdown selection
+
   if (type === "select" && Array.isArray(field.options)) {
     return (
       <select
@@ -39,7 +38,7 @@ function InputByType({ field, value, onChange }) {
       </select>
     );
   }
-  // If multiline textarea
+
   if (type === "multiline" || type === "textarea") {
     return (
       <textarea
@@ -52,8 +51,14 @@ function InputByType({ field, value, onChange }) {
       />
     );
   }
-  // If default values
-  const map = { number: "number", email: "email", date: "date", password: "password", url: "url" };
+  //If default values
+  const map = {
+    number: "number",
+    email: "email",
+    date: "date",
+    password: "password",
+    url: "url",
+  };
   const htmlType = map[type] || "text";
   return (
     <input
@@ -88,7 +93,9 @@ function EntityForm({ name, fields }) {
 
   return (
     <form className="card form" onSubmit={onSubmit}>
-      <div className="h2" style={{ marginBottom: 2 }}>{name}</div>
+      <div className="h2" style={{ marginBottom: 2 }}>
+        {name}
+      </div>
       <div className="grid grid--2">
         {fields.map((field, idx) => {
           const inputId = `${name}-${field.name}`;
@@ -110,7 +117,9 @@ function EntityForm({ name, fields }) {
         })}
       </div>
       <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-        <button className="btn" type="submit">Save</button>
+        <button className="btn" type="submit">
+          Save
+        </button>
         <button
           type="button"
           className="btn btn--ghost"
@@ -130,13 +139,15 @@ export default function GeneratedUI() {
     entities: ["Entity"],
     features: ["Create", "Update", "List"],
     entitySchemas: {
-      Entity: [
-        { name: "title", label: "Title", type: "text", required: true },
-        // …
-      ],
+      Entity: [{ name: "title", label: "Title", type: "text", required: true }],
     },
   };
-  const { appName, entities = [], features = [], entitySchemas = {} } = extracted;
+  const {
+    appName,
+    entities = [],
+    features = [],
+    entitySchemas = {},
+  } = extracted;
   return (
     <div className="grid" style={{ marginTop: 18 }}>
       <div className="card card--soft">
